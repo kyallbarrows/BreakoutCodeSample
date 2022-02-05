@@ -10,7 +10,10 @@ public class Breakout : MonoBehaviour
 
     private DrawBuffer _drawBuffer;
     private Physics _physics;
-    private IController _gameController;
+    private IController _currentGameController;
+    private AIController _aiController;
+    private TouchController _touchController;
+    private bool _useAIController = true;
 
     private int _score = 0;
     private int _lives = Consts.INITIAL_LIVES;
@@ -32,7 +35,12 @@ public class Breakout : MonoBehaviour
             Debug.Log($"Breakout: unable to get all or part of MeshRenderer's main texture: {e.Message} ({e.GetType()})");
         }
 
+        _physics = new Physics();
         _drawBuffer = new DrawBuffer(_mainTex);
+
+        _touchController = new TouchController();
+        _aiController = new AIController();
+        _currentGameController = _aiController;
 
         ResetLevel(_gameLevel);
     }
@@ -44,13 +52,10 @@ public class Breakout : MonoBehaviour
 	/// <param name="level">The level, 1-N, to reset to.</param>
     public void ResetLevel(int level)
     {
-        // TODO: need to do this or new AIController based on menu choice
-        _gameController = new TouchController();
-
         // level is 1-indexed, so subtract 1 from it before calc'ing new speed
         float thisLevelBallSpeed = Consts.DEFAULT_BALL_SPEED +
             (level - 1) * Consts.BALL_SPEED_INCREASE_PER_LEVEL;
-        _physics = new Physics(thisLevelBallSpeed);
+        _physics.Reset(thisLevelBallSpeed);
     }
 
     private bool CheckForWin() {
@@ -68,6 +73,8 @@ public class Breakout : MonoBehaviour
         float deltaT = Time.deltaTime;
 
         // get touch input, or AI player input, and move paddle accordingly
+        var newPaddleLeftRatio = _currentGameController.GetNewPaddleLeftRatio(_physics);
+        _physics.MovePaddleTo(newPaddleLeftRatio);
 
         // run physics step
         RunPhysicsStep(deltaT);
@@ -83,35 +90,14 @@ public class Breakout : MonoBehaviour
             _gameLevel++;
             ResetLevel(_gameLevel);
         }
-
-        /*
-        Color redColor = new Color(1f, 0.0f, 0.0f);
-        Color greenColor = new Color(0.0f, 1f, 0.0f);
-        Color blueColor = new Color(0.0f, 0.0f, 1f);
-        var fillColorArray =  _mainTex.GetPixels();
-        
-        for(var i = 0; i < fillColorArray.Length; ++i)
-        {
-            if (i % 3 == 0) fillColorArray[i] = redColor;
-            if (i % 3 == 1) fillColorArray[i] = greenColor;
-            if (i % 3 == 2) fillColorArray[i] = blueColor;
-        }
-        
-        _mainTex.SetPixels( fillColorArray );
-        _mainTex.Apply();
-        */
     }
 
-    private void RunPhysicsStep(float deltaT) { }
+    private void RunPhysicsStep(float deltaT) {
+        _physics.RunStep(deltaT);
+    }
 
     private void DoDrawCycle() {
         _drawBuffer.BeginDrawCycle();
-
-        // - draw bricks
-        // - draw ball
-        // - draw paddle
-        // decide if we want to do any vsync errors on the TV screen
-
 
         // - draw score/lives/level
         // score should never get above 800-ish, but limit just in case
@@ -125,8 +111,17 @@ public class Breakout : MonoBehaviour
         _drawBuffer.DrawNumber(_lives, Consts.LIVES_X, Consts.STATS_Y);
         _drawBuffer.DrawNumber(_gameLevel, Consts.LEVEL_X, Consts.STATS_Y);
 
+        _drawBuffer.DrawBrick(0, 0);
+        _drawBuffer.DrawBrick(1, 1);
+        _drawBuffer.DrawBrick(2, 2);
+        _drawBuffer.DrawBrick(3, 3);
+        _drawBuffer.DrawBrick(4, 4);
+        _drawBuffer.DrawBrick(5, 5);
+
         _drawBuffer.DrawPaddle(_physics.PaddleLeftX, Consts.PADDLE_Y);
-        _drawBuffer.DrawBall(20, 20);
+        _drawBuffer.DrawBall(_physics.PixelBallPosition.x, _physics.PixelBallPosition.y);
+
+        // decide if we want to do any vsync errors on the TV screen
 
         _drawBuffer.FinishDrawCycle();
     }

@@ -90,12 +90,12 @@ public class DrawBuffer
             // fill the reset texture with black
             // NOTE: the texture needs to be made writeable in the import settings.
             // While it's a teeny bit wasteful to have the color bars texture that we'll
-            // just be throwing away 
+            // just be throwing away, it's probably how we'd get it from the art team.
             for (int x = 0; x < _destinationTexture.width; x++)
             {
                 for (int y = 0; y < _destinationTexture.height; y++)
                 {
-                    _destinationTexture.SetPixel(x, y, x % 3 == 0 ? Color.black : new Color(.02f, .02f, .02f));
+                    _destinationTexture.SetPixel(x, y, Color.black);
                 }
             }
 
@@ -187,8 +187,10 @@ public class DrawBuffer
 	/// <param name="color">A Palette enum value for coloring the brick</param>
 	/// <param name="x">x of the left side of the brick</param>
 	/// <param name="y">y of the bottom of the brick</param>
-    public void DrawBrick(int rowIndex, int x, int y) {
-
+    public void DrawBrick(int columnIndex, int rowIndex) {
+        var pixels = _spritePixels[string.Format(Consts.SPRITE_BRICK_TEMPLATE, rowIndex)];
+        DrawElement(pixels, Consts.BRICK_WIDTH, Consts.BRICK_HEIGHT,
+            columnIndex * Consts.BRICK_WIDTH + Consts.HOUSE_WALL_THICKNESS, Consts.BRICKS_START_Y + rowIndex * Consts.BRICK_HEIGHT);
     }
 
     /// <summary>
@@ -197,7 +199,7 @@ public class DrawBuffer
 	/// <param name="x">x of the left side of the paddle</param>
 	/// <param name="y">y of the paddle</param>
     public void DrawPaddle(int x, int y) {
-        DrawElement(_spritePixels[Consts.SPRITE_PADDLE], Consts.PADDLE_WIDTH, Consts.PADDLE_HEIGHT, x + Consts.HOUSE_WALL_THICKNESS, y);
+        DrawElement(_spritePixels[Consts.SPRITE_PADDLE], Consts.PADDLE_WIDTH, Consts.PADDLE_HEIGHT, x, y);
     }
 
     /// <summary>
@@ -206,7 +208,7 @@ public class DrawBuffer
 	/// <param name="x">x</param>
 	/// <param name="y">y</param>
     public void DrawBall(int x, int y) {
-        DrawElement(_spritePixels[Consts.SPRITE_BALL], Consts.BALL_WIDTH, Consts.BALL_HEIGHT, x + Consts.HOUSE_WALL_THICKNESS, y);
+        DrawElement(_spritePixels[Consts.SPRITE_BALL], Consts.BALL_WIDTH, Consts.BALL_HEIGHT, x, y);
     }
 
     public void FinishDrawCycle() {

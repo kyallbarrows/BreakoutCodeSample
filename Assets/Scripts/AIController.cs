@@ -14,6 +14,8 @@ public class AIController : IController
 	/// <returns>A number between 0 (inclusive) and 1 (inclusive)</returns>
 	public float GetNewPaddleLeftRatio(Physics p)
 	{
-		throw new System.NotImplementedException();
+		// get current ball left-ness ratio
+		float ballLeftRatio = (float)(p.PixelBallPosition.x - Consts.BALL_LEFT_LIMIT) / (float)Consts.BALL_MOVE_RANGE;
+		return ballLeftRatio;
 	}
 }
