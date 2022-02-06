@@ -33,7 +33,7 @@ public class Breakout : MonoBehaviour
             _meshRenderer.material.mainTexture = _mainTex;
         }
         catch(Exception e) {
-            Debug.Log($"Breakout: unable to get all or part of MeshRenderer's main texture: {e.Message} ({e.GetType()})");
+            Debug.LogError($"Breakout: unable to get all or part of MeshRenderer's main texture: {e.Message} ({e.GetType()})");
         }
 
         _physics = new Physics();
@@ -126,7 +126,6 @@ public class Breakout : MonoBehaviour
 
     private void DrawBrickRow(BitArray brickStatuses, int rowIndex) {
         for (int col = 0; col < Consts.BRICKS_PER_ROW; col++) {
-            Debug.Log($"Draw brick at {col} {rowIndex}");
             if (brickStatuses[col]) {
                 _drawBuffer.DrawBrick(col, rowIndex);
             }
