@@ -14,7 +14,7 @@ public class Breakout : MonoBehaviour
     private IController _currentGameController;
     private AIController _aiController;
     private TouchController _touchController;
-    private bool _useAIController = true;
+    private bool _useAIController = false;
 
     private int _score = 0;
     private int _lives = Consts.INITIAL_LIVES;
@@ -41,7 +41,9 @@ public class Breakout : MonoBehaviour
 
         _touchController = new TouchController();
         _aiController = new AIController();
-        _currentGameController = _aiController;
+
+        // pre-load all the sounds into memory. They're tiny, so it's ok.
+        SoundManager.Init(this.gameObject);
 
         ResetLevel(_gameLevel);
     }
@@ -57,10 +59,7 @@ public class Breakout : MonoBehaviour
         float thisLevelBallSpeed = Consts.DEFAULT_BALL_SPEED +
             (level - 1) * Consts.BALL_SPEED_INCREASE_PER_LEVEL;
         _physics.Reset(thisLevelBallSpeed);
-    }
-
-    private bool CheckForWin() {
-        return false;
+        _physics.ResetBall();
     }
 
     // Update is called once per frame
@@ -74,27 +73,34 @@ public class Breakout : MonoBehaviour
         float deltaT = Time.deltaTime;
 
         // get touch input, or AI player input, and move paddle accordingly
+        _currentGameController = _useAIController ? (IController)_aiController : (IController)_touchController;
         var newPaddleLeftRatio = _currentGameController.GetNewPaddleLeftRatio(_physics);
         _physics.MovePaddleTo(newPaddleLeftRatio);
 
         // run physics step
-        RunPhysicsStep(deltaT);
+        var result = _physics.RunStep(deltaT);
+        _score += result.ScoreChange;
         DoDrawCycle();
 
-        // TODO: move out to external portion of app
-        // handle what's going on in the 3D scene
-        // - check if we're on the next step of the script, and call any tasks
-        // - turn on or off any oscillating lights
-        // - update any tweens on gameobjects
+        if (result.LifeLost)
+        {
+            _lives--;
+            _physics.ResetBall();
 
-        if (CheckForWin()) {
+            if (_lives == 0)
+            {
+                // not really sure what should happen here, and we're running short on time.
+                // for now, just reset to level 1 and restart game
+                _lives = Consts.INITIAL_LIVES;
+                _gameLevel = 1;
+                ResetLevel(_gameLevel);
+            }
+        }
+        else if (result.WonLevel) {
+            // just bump the level and reset
             _gameLevel++;
             ResetLevel(_gameLevel);
         }
-    }
-
-    private void RunPhysicsStep(float deltaT) {
-        _physics.RunStep(deltaT);
     }
 
     private void DoDrawCycle() {
@@ -102,10 +108,10 @@ public class Breakout : MonoBehaviour
 
         // - draw score/lives/level
         // score should never get above 800-ish, but limit just in case
-        int thisScore = (int)Math.Min(0, _score);
+        int thisScore = Mathf.Min(999, _score);
+        int ones = thisScore % 10;
+        int tens = ((thisScore - ones) % 100) / 10;
         int hundreds = thisScore / 100;
-        int tens = (thisScore - hundreds) / 10;
-        int ones = thisScore - (hundreds + tens);
         _drawBuffer.DrawNumber(hundreds, Consts.SCORE_X, Consts.STATS_Y);
         _drawBuffer.DrawNumber(tens, Consts.SCORE_X + Consts.TOTAL_DIGIT_WIDTH, Consts.STATS_Y);
         _drawBuffer.DrawNumber(ones, Consts.SCORE_X + Consts.TOTAL_DIGIT_WIDTH * 2, Consts.STATS_Y);
@@ -130,5 +136,10 @@ public class Breakout : MonoBehaviour
                 _drawBuffer.DrawBrick(col, rowIndex);
             }
         }
+    }
+
+    void OnGUI()
+    {
+        _useAIController = GUILayout.Toggle(_useAIController, "Autoplay");
     }
 }

@@ -39,7 +39,6 @@ public class SceneController : MonoBehaviour
         var t = Time.timeSinceLevelLoad;
         // randomly wave lava light's intensity between half and full intensity
         _lavaLight.intensity = (RandomWaves(t, .3f) * .8f + .2f) * _lavaLightMaxIntensity;
-        Debug.Log("INTENSE " + _lavaLight.intensity);
         _roomLight.enabled = Time.timeSinceLevelLoad % 40 > 35;
 
         var lavaBlob1Stretch = 1f + RandomWaves(t, .1f);
@@ -49,12 +48,12 @@ public class SceneController : MonoBehaviour
         _lavaBlob2.transform.localScale = new Vector3(1, 1, lavaBlob2Stretch);
         _lavaBlob3.transform.localScale = new Vector3(1, 1, lavaBlob3Stretch);
 
-        var lavaBlob1Z = RandomWaves(t, .1f) * .65f;
-        var lavaBlob2Z = RandomWaves(t, .2f) * 2f;
-        var lavaBlob3Z = RandomWaves(t, .15f) * 2f;
-        _lavaBlob1.transform.localPosition = _lavaBlob1Home + new Vector3(0, lavaBlob1Z, 0);
-        _lavaBlob2.transform.localPosition = _lavaBlob2Home + new Vector3(0, lavaBlob2Z, 0);
-        _lavaBlob3.transform.localPosition = _lavaBlob3Home + new Vector3(0, lavaBlob3Z, 0);
+        var lavaBlob1Y = RandomWaves(t, .1f) * .65f;
+        var lavaBlob2Y = RandomWaves(t, .2f) * 2f;
+        var lavaBlob3Y = RandomWaves(t, .15f) * 2f;
+        _lavaBlob1.transform.localPosition = _lavaBlob1Home + new Vector3(0, lavaBlob1Y, 0);
+        _lavaBlob2.transform.localPosition = _lavaBlob2Home + new Vector3(0, lavaBlob2Y, 0);
+        _lavaBlob3.transform.localPosition = _lavaBlob3Home + new Vector3(0, lavaBlob3Y, 0);
     }
 
     /// <summary>

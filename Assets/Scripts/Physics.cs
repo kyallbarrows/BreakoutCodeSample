@@ -1,27 +1,34 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Specialized;
 using UnityEngine;
 
-public struct Brick {
-	int left;
-	int bottom;
+public delegate void PlayerScored(int scoreAmount);
+public delegate void PlayerWon();
+public delegate void PlayerLost();
+
+public class PhysicsStepResult {
+	public int ScoreChange = 0;
+	public bool LifeLost = false;
+	public bool WonLevel = false;
 }
 
 public class Physics
 {
+	public event PlayerScored OnPlayerScored;
+	public event PlayerWon OnPlayerWon;
+	public event PlayerLost OnPlayerLifeLost;
+
 	// Track whether the bricks are alive or not using a BitVector32 for each
 	// row of bricks.  
 	private BitArray[] _bricks = new BitArray[Consts.NUM_BRICK_ROWS];
+	private int _remainingBricks;
 
+	private bool _ballAlive = true;
 	private float _ballAngle;
 	private float _ballSpeed;
 	private Vector2 _ballVelocity;
 	private Vector2Int _lastPixelBallPosition;
 	private Vector2 _preciseBallPosition;
-
-
 
 	// gets the closest pixel position of the precise ball location
 	public Vector2Int PixelBallPosition => new Vector2Int(
@@ -30,7 +37,6 @@ public class Physics
 
 	private int _paddleLeftX;
 	public int PaddleLeftX => _paddleLeftX;
-
 
 	public Physics() {
 	}
@@ -49,19 +55,24 @@ public class Physics
 	}
 
 	public void Reset(float ballSpeed) {
+		_remainingBricks = Consts.NUM_BRICK_ROWS * Consts.BRICKS_PER_ROW;
+
 		for (int row = 0; row < Consts.NUM_BRICK_ROWS; row++) {
 			// create new BitVector for each row of bricks, setting all bits to true
 			_bricks[row] = new BitArray(Consts.BRICKS_PER_ROW, true);
 		}
 
 		_ballSpeed = ballSpeed;
-
-		// value type, so we're ok chaining the assignments
-		_preciseBallPosition = new Vector2(Consts.INITIAL_BALL_X, Consts.INITIAL_BALL_Y);
-		_lastPixelBallPosition = PixelBallPosition;
-
 		_ballAngle = Consts.BALL_ANGLE_MEDIUM;
 		SetBallVelocity(_ballAngle, _ballSpeed);
+
+		ResetBall();
+	}
+
+	public void ResetBall() {
+		_preciseBallPosition = new Vector2(Consts.INITIAL_BALL_X, Consts.INITIAL_BALL_Y);
+		_lastPixelBallPosition = PixelBallPosition;
+		_ballAlive = true;
 	}
 
 	private void SetBallVelocity(float angle, float speed) {
@@ -73,8 +84,11 @@ public class Physics
 	/// </summary>
 	/// <param name="deltaT">Elapsed seconds since last call, used for moving the ball and paddle</param>
 	/// <returns>Whether the ball is still alive</returns>
-	public bool RunStep(float deltaT) {
-		var lastCheckedBallPos = _lastPixelBallPosition;
+	public PhysicsStepResult RunStep(float deltaT) {
+		// DONT run if the ball is dead, it just racks up losses unfairly.
+		if (!_ballAlive) {
+			return new PhysicsStepResult();
+		}
 
 		// We need to check every pixel the ball travels through, especially the
 		// faster it goes.  Otherwise, it may warp past a brick or a wall, which
@@ -101,49 +115,43 @@ public class Physics
 		// path, so as not to warp through any bricks
 		var preciseStartingBallPos = _preciseBallPosition;
 
-		int protect = 0;
+		// this whole system of returning results could use some cleanup, seems messy.
+		// Tried using events, but the entire physics loop really needs to remain synchronous
+		// to avoid hard to debug codepaths.
+		PhysicsStepResult result = new PhysicsStepResult();
 
-		for (float traveled = 0; traveled <= ballDistance && protect < 10000; ) {
-			protect++;
+		for (float traveled = 0; traveled <= ballDistance; ) {
 			var thisTravel = Mathf.Min(1f, ballDistance);
 			traveled += thisTravel;
+
 			// NOTE: _ballAngle might get modified between loops here by DoPhysics, 
 			// but speed will stay constant
 			Vector2 direction = _ballVelocity.normalized;
 			Vector2 preciseTotalTravel = new Vector2(direction.x * thisTravel, direction.y * thisTravel);
 			_preciseBallPosition = preciseStartingBallPos + preciseTotalTravel;
+
 			// make sure it actually moved a full pixel before checking physics here
 			if (PixelBallPosition != _lastPixelBallPosition) {
 				_lastPixelBallPosition = PixelBallPosition;
-				if (!DoHitChecks(_lastPixelBallPosition)) {
-					return false;
-				}
+				result = DoHitChecks(_lastPixelBallPosition);
 			}
 		}
 
-		// calculate next ball position, rounding to int's
-		// if it's the same, do nothing
-
-		// if ball has moved more than one 1 pixel, we need to check the in
-		// between pixels, so use Bresenham's algorithm to get each interstitial
-		// pixel value
-
-		// with each pixel we touched:
-		// - do hit detection
-		// - remove any dead bricks
-		// - update ball velocity
-		// - add to list of sounds we need to play
-
-		return true;
+		return result;
 	}
 
-	private bool DoHitChecks(Vector2Int ballPos) {
+	private PhysicsStepResult DoHitChecks(Vector2Int ballPos) {
+		var result = new PhysicsStepResult();
+
 		// check if below paddle
 		if (ballPos.y <= Consts.PADDLE_Y) {
-			// lost a life
-			return false;
+			_ballAlive = false;
+
+			result.LifeLost = true;
+			return result;
 		}
 
+		bool hitBrick = false;
 		bool hitTop = false;
 		bool hitSide = false;
 		bool hitPaddle = false;
@@ -166,6 +174,7 @@ public class Physics
 			hitSide = true;
 		}
 
+		// Check all the bricks for hits
 		for (int row = 0; row < Consts.NUM_BRICK_ROWS; row++) {
 			var thisRow = _bricks[row];
 			var rowY = Consts.BRICKS_START_Y + row * Consts.BRICK_HEIGHT;
@@ -174,29 +183,19 @@ public class Physics
 				int colIndex = ballPos.x / Consts.BRICK_WIDTH;
 
 				// if we have a brick, reflect 
-				if (thisRow[colIndex]) {
-					// this is a little inaccurate, as we'll count a hit from below on the end
-					// as a side hit.  We could improve by trackig last position, and seeing which angle
-					// it came in from.  For now though, this will suffice
-					int leftEdge = colIndex * Consts.BRICK_WIDTH;
-					int rightEdge = leftEdge + Consts.BRICK_WIDTH - 1;
+				if (thisRow[colIndex] && CheckBrickHit(ballPos, row, colIndex)) {
+					hitBrick = true;
+					SoundManager.PlaySound(string.Format(Consts.SOUND_RESOURCE_BRICK_TEMPLATE, row));
+					thisRow[colIndex] = false;
+					_remainingBricks--;
 
-					if (ballPos.x >= leftEdge && ballPos.x <= rightEdge) {
-						// disable the brick
-						thisRow[colIndex] = false;
-
-						// if it was hit on the left, from the left, or on the
-						// right, from the right, rebound x
-						if ((ballPos.x == leftEdge && _ballVelocity.x > 0) ||
-							(ballPos.x == rightEdge && _ballVelocity.x < 0))
-						{
-							_ballVelocity.x *= -1;
-						}
-						else {
-							// assume hit from below, rebound y
-							_ballVelocity.y *= -1;
-						}
+					if (_remainingBricks == 0)
+					{
+						result.WonLevel = true;
 					}
+
+					// fire off a PlayerScored event
+					result.ScoreChange += Consts.BRICK_VALUES[row];
 				}
 			}
 		}
@@ -204,6 +203,7 @@ public class Physics
 		// check for paddle hit
 		if (ballPos.y <= Consts.PADDLE_Y + 1 && _ballVelocity.y < 0 &&
 			ballPos.x >= _paddleLeftX && ballPos.x <= (_paddleLeftX + Consts.PADDLE_WIDTH)) {
+
 			// need to check position of ball on paddle.
 			// If it's on front half, just reverse Y velocity
 			// If it's on the back half, may need to change bounce angle.
@@ -240,13 +240,56 @@ public class Physics
 		}
 
 		// TODO: if we ever add achievements, we should really award one called
-		// "DVD Screensaver" if they hit top and side at same time
-		if (hitTop || hitSide || hitPaddle)
+		// "DVD Screensaver" if they hit top and side at exact same time
+
+		// Play appropriate sound, but don't play multiple.  If we already hit a brick, skip,
+		// because we played sound for it already.
+		if (!hitBrick)
 		{
-			// TODO: play a sound
+			if (hitTop || hitSide)
+			{
+				SoundManager.PlaySound(Consts.SOUND_RESOURCE_WALL);
+			}
+			else if (hitPaddle)
+			{
+				SoundManager.PlaySound(Consts.SOUND_RESOURCE_PADDLE);
+			}
 		}
 
-		return true;
+		return result;
+	}
+
+	private bool CheckBrickHit(Vector2 ballPos, int row, int column) {
+		// this is a little inaccurate, as we'll count a hit from below on the end
+		// as a side hit.  This causes some really weird behavior sometimes.
+		// If I had more time, I'd probably strip this out and just use some flavor
+		// of Box2D, but that carries it's own set of problems.  For the given
+		// timeframe, I suppose this is ok, but I'd love to improved it by trackig
+		// last position, and seeing which angle it came in from.  But hey, it's no
+		// weirder than the original Breakout, where the ball constantly warped
+		// through entire bricks.
+		int leftEdge = column * Consts.BRICK_WIDTH;
+		int rightEdge = leftEdge + Consts.BRICK_WIDTH - 1;
+
+		if (ballPos.x >= leftEdge && ballPos.x <= rightEdge)
+		{
+			// if it was hit on the left, from the left, or on the
+			// right, from the right, rebound x
+			if ((ballPos.x == leftEdge && _ballVelocity.x > 0) ||
+				(ballPos.x == rightEdge && _ballVelocity.x < 0))
+			{
+				_ballVelocity.x *= -1;
+			}
+			else
+			{
+				// assume hit from above or below, rebound y
+				_ballVelocity.y *= -1;
+			}
+
+			return true;
+		}
+
+		return false;
 	}
 
 	/// <summary>

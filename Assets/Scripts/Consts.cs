@@ -6,6 +6,7 @@ public class Consts
 	public const int BRICKS_PER_ROW = 18;
 	public const float DEFAULT_BALL_SPEED = 22f;
 	public const int INITIAL_LIVES = 5;
+	public static int[] BRICK_VALUES = new int[] { 1, 1, 4, 4, 7, 7 };
 
 	// not sure how quickly things ramped up on the original breakout, but this might work
 	public const float BALL_SPEED_INCREASE_PER_LEVEL = 2f;
@@ -70,4 +71,8 @@ public class Consts
 	public const string SPRITE_BRICK_YELLOW = "Sprites/BreakoutScreenElements/brickYellow";
 	public const string SPRITE_BRICK_GREEN = "Sprites/BreakoutScreenElements/brickGreen";
 	public const string SPRITE_BRICK_BLUE = "Sprites/BreakoutScreenElements/brickBlue";
+
+	public const string SOUND_RESOURCE_PADDLE = "Sounds/paddle";
+	public const string SOUND_RESOURCE_WALL = "Sounds/wall";
+	public const string SOUND_RESOURCE_BRICK_TEMPLATE = "Sounds/brick{0}";
 }
