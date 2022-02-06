@@ -199,7 +199,7 @@ public class DrawBuffer
 	/// <param name="x">x of the left side of the paddle</param>
 	/// <param name="y">y of the paddle</param>
     public void DrawPaddle(int x, int y) {
-        DrawElement(_spritePixels[Consts.SPRITE_PADDLE], Consts.PADDLE_WIDTH, Consts.PADDLE_HEIGHT, x, y);
+        DrawElement(_spritePixels[Consts.SPRITE_PADDLE], Consts.PADDLE_WIDTH, Consts.PADDLE_HEIGHT, x + Consts.HOUSE_WALL_THICKNESS, y);
     }
 
     /// <summary>
@@ -208,7 +208,7 @@ public class DrawBuffer
 	/// <param name="x">x</param>
 	/// <param name="y">y</param>
     public void DrawBall(int x, int y) {
-        DrawElement(_spritePixels[Consts.SPRITE_BALL], Consts.BALL_WIDTH, Consts.BALL_HEIGHT, x, y);
+        DrawElement(_spritePixels[Consts.SPRITE_BALL], Consts.BALL_WIDTH, Consts.BALL_HEIGHT, x + Consts.HOUSE_WALL_THICKNESS, y);
     }
 
     public void FinishDrawCycle() {

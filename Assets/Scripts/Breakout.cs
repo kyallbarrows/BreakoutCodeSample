@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using UnityEngine;
 
 public class Breakout : MonoBehaviour
@@ -111,12 +112,9 @@ public class Breakout : MonoBehaviour
         _drawBuffer.DrawNumber(_lives, Consts.LIVES_X, Consts.STATS_Y);
         _drawBuffer.DrawNumber(_gameLevel, Consts.LEVEL_X, Consts.STATS_Y);
 
-        _drawBuffer.DrawBrick(0, 0);
-        _drawBuffer.DrawBrick(1, 1);
-        _drawBuffer.DrawBrick(2, 2);
-        _drawBuffer.DrawBrick(3, 3);
-        _drawBuffer.DrawBrick(4, 4);
-        _drawBuffer.DrawBrick(5, 5);
+        for (int row = 0; row < Consts.NUM_BRICK_ROWS; row++) {
+            DrawBrickRow(_physics.GetBrickRow(row), row);
+        }
 
         _drawBuffer.DrawPaddle(_physics.PaddleLeftX, Consts.PADDLE_Y);
         _drawBuffer.DrawBall(_physics.PixelBallPosition.x, _physics.PixelBallPosition.y);
@@ -124,5 +122,14 @@ public class Breakout : MonoBehaviour
         // decide if we want to do any vsync errors on the TV screen
 
         _drawBuffer.FinishDrawCycle();
+    }
+
+    private void DrawBrickRow(BitArray brickStatuses, int rowIndex) {
+        for (int col = 0; col < Consts.BRICKS_PER_ROW; col++) {
+            Debug.Log($"Draw brick at {col} {rowIndex}");
+            if (brickStatuses[col]) {
+                _drawBuffer.DrawBrick(col, rowIndex);
+            }
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using UnityEngine;
@@ -12,12 +13,15 @@ public class Physics
 {
 	// Track whether the bricks are alive or not using a BitVector32 for each
 	// row of bricks.  
-	private BitVector32[] brick = new BitVector32[Consts.NUM_BRICK_ROWS];
+	private BitArray[] _bricks = new BitArray[Consts.NUM_BRICK_ROWS];
 
 	private float _ballAngle;
+	private float _ballSpeed;
 	private Vector2 _ballVelocity;
 	private Vector2Int _lastPixelBallPosition;
 	private Vector2 _preciseBallPosition;
+
+
 
 	// gets the closest pixel position of the precise ball location
 	public Vector2Int PixelBallPosition => new Vector2Int(
@@ -28,7 +32,8 @@ public class Physics
 	public int PaddleLeftX => _paddleLeftX;
 
 
-	public Physics() { }
+	public Physics() {
+	}
 
 	// TODO:
 	// have a run-frame function
@@ -40,16 +45,27 @@ public class Physics
 	// raise events on wall/paddle bumps or brick hits?
 
 	public void MovePaddleTo(float leftRatio) {
-		_paddleLeftX = Consts.HOUSE_WALL_THICKNESS + (int)(leftRatio * (float)Consts.PADDLE_MOVE_RANGE);
+		_paddleLeftX = (int)(leftRatio * (float)Consts.PADDLE_MOVE_RANGE);
 	}
 
 	public void Reset(float ballSpeed) {
+		for (int row = 0; row < Consts.NUM_BRICK_ROWS; row++) {
+			// create new BitVector for each row of bricks, setting all bits to true
+			_bricks[row] = new BitArray(Consts.BRICKS_PER_ROW, true);
+		}
+
+		_ballSpeed = ballSpeed;
+
 		// value type, so we're ok chaining the assignments
 		_preciseBallPosition = new Vector2(Consts.INITIAL_BALL_X, Consts.INITIAL_BALL_Y);
 		_lastPixelBallPosition = PixelBallPosition;
 
 		_ballAngle = Consts.BALL_ANGLE_MEDIUM;
-		_ballVelocity = new Vector2(ballSpeed * Mathf.Cos(_ballAngle), ballSpeed * Mathf.Sin(_ballAngle));
+		SetBallVelocity(_ballAngle, _ballSpeed);
+	}
+
+	private void SetBallVelocity(float angle, float speed) {
+		_ballVelocity = new Vector2(speed * Mathf.Cos(angle), speed * Mathf.Sin(angle));
 	}
 
 	/// <summary>
@@ -140,20 +156,86 @@ public class Physics
 			hitTop = true;
 		}
 
-		if (ballPos.x <= Consts.LEFT_WALL_X && _ballVelocity.x < 0) {
+		if (ballPos.x <= Consts.BALL_LEFT_LIMIT && _ballVelocity.x < 0) {
 			_ballVelocity.x *= -1;
 			hitSide = true;
 		}
-		else if (ballPos.x >= Consts.RIGHT_WALL_X && _ballVelocity.x > 0)
+		else if (ballPos.x >= Consts.BALL_RIGHT_LIMIT && _ballVelocity.x > 0)
 		{
 			_ballVelocity.x *= -1;
 			hitSide = true;
 		}
 
+		for (int row = 0; row < Consts.NUM_BRICK_ROWS; row++) {
+			var thisRow = _bricks[row];
+			var rowY = Consts.BRICKS_START_Y + row * Consts.BRICK_HEIGHT;
+			if (ballPos.y >= rowY && ballPos.y < rowY + Consts.BRICK_HEIGHT) {
+				// check this row
+				int colIndex = ballPos.x / Consts.BRICK_WIDTH;
+
+				// if we have a brick, reflect 
+				if (thisRow[colIndex]) {
+					// this is a little inaccurate, as we'll count a hit from below on the end
+					// as a side hit.  We could improve by trackig last position, and seeing which angle
+					// it came in from.  For now though, this will suffice
+					int leftEdge = colIndex * Consts.BRICK_WIDTH;
+					int rightEdge = leftEdge + Consts.BRICK_WIDTH - 1;
+
+					if (ballPos.x >= leftEdge && ballPos.x <= rightEdge) {
+						// disable the brick
+						thisRow[colIndex] = false;
+
+						// if it was hit on the left, from the left, or on the
+						// right, from the right, rebound x
+						if ((ballPos.x == leftEdge && _ballVelocity.x > 0) ||
+							(ballPos.x == rightEdge && _ballVelocity.x < 0))
+						{
+							_ballVelocity.x *= -1;
+						}
+						else {
+							// assume hit from below, rebound y
+							_ballVelocity.y *= -1;
+						}
+					}
+				}
+			}
+		}
+
 		// check for paddle hit
 		if (ballPos.y <= Consts.PADDLE_Y + 1 && _ballVelocity.y < 0 &&
 			ballPos.x >= _paddleLeftX && ballPos.x <= (_paddleLeftX + Consts.PADDLE_WIDTH)) {
+			// need to check position of ball on paddle.
+			// If it's on front half, just reverse Y velocity
+			// If it's on the back half, may need to change bounce angle.
+			int distanceFromPaddleTail = ballPos.x - _paddleLeftX;
+			if (_ballVelocity.x < 0) {
+				distanceFromPaddleTail = _paddleLeftX + Consts.PADDLE_WIDTH - ballPos.x;
+			}
+
+			int xDirection = _ballVelocity.x > 0 ? 1 : -1;
+			if (distanceFromPaddleTail <= 1)
+			{
+				_ballAngle = Consts.BALL_ANGLE_SHALLOW;
+				xDirection *= -1;
+			}
+			else if (distanceFromPaddleTail <= 3)
+			{
+				_ballAngle = Consts.BALL_ANGLE_MEDIUM;
+				xDirection *= -1;
+			}
+			else if (distanceFromPaddleTail < 5)
+			{
+				_ballAngle = Consts.BALL_ANGLE_DEEP;
+				xDirection *= -1;
+			}
+			else {
+				// no chnage needed, we'll reverse y direction for all these cases at the end
+			}
+
+			SetBallVelocity(_ballAngle, _ballSpeed);
+			_ballVelocity.x = Mathf.Abs(_ballVelocity.x) * xDirection;
 			_ballVelocity.y *= -1;
+
 			hitPaddle = true;
 		}
 
@@ -171,8 +253,9 @@ public class Physics
 	/// Gets all the bricks, so they can be rendered
 	/// </summary>
 	/// <returns></returns>
-	public object GetBricks() {
-		return null;
+	public BitArray GetBrickRow(int rowIndex) {
+		// TODO: add some guardrails on the index here
+		return _bricks[rowIndex];
 	}
 
 }

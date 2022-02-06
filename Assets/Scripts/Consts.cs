@@ -32,12 +32,13 @@ public class Consts
 	public const int HOUSE_WALL_THICKNESS = 5; // how far from the side of the scene we need to draw the ball, bricks, paddle
 	public const int BALL_WIDTH = 1;
 	public const int BALL_HEIGHT = 1;
-	public const int BALL_LEFT_LIMIT = HOUSE_WALL_THICKNESS;
+	public const int BALL_LEFT_LIMIT = 0;
 	public const int BALL_MOVE_RANGE = HOUSE_WIDTH - (HOUSE_WALL_THICKNESS * 2) - BALL_WIDTH;
+	public const int BALL_RIGHT_LIMIT = BALL_LEFT_LIMIT + BALL_MOVE_RANGE;
 	public const int PADDLE_WIDTH = 10;
 	public const int PADDLE_HEIGHT = 1;
 	public const int PADDLE_MOVE_RANGE = HOUSE_WIDTH - HOUSE_WALL_THICKNESS * 2 - PADDLE_WIDTH;
-	public const int PADDLE_LEFT_LIMIT = HOUSE_WALL_THICKNESS;
+	public const int PADDLE_LEFT_LIMIT = 0;
 	public const int PADDLE_RIGHT_LIMIT = HOUSE_WALL_THICKNESS + PADDLE_MOVE_RANGE - PADDLE_WIDTH;
 	public const int PADDLE_Y = 1;
 	public const int BRICK_WIDTH = 5;
@@ -47,9 +48,9 @@ public class Consts
 	public const int DIGIT_HEIGHT = 5;
 	public const int TOTAL_DIGIT_WIDTH = 10;    // the width including spacing
 
-	public const float BALL_ANGLE_SHALLOW = 20f * Mathf.Deg2Rad;
-	public const float BALL_ANGLE_MEDIUM = 40f * Mathf.Deg2Rad;
-	public const float BALL_ANGLE_DEEP = 60f * Mathf.Deg2Rad;
+	public const float BALL_ANGLE_SHALLOW = -20f * Mathf.Deg2Rad;
+	public const float BALL_ANGLE_MEDIUM = -40f * Mathf.Deg2Rad;
+	public const float BALL_ANGLE_DEEP = -60f * Mathf.Deg2Rad;
 	public const int INITIAL_BALL_X = 20;
 	public const int INITIAL_BALL_Y = 30;
 
