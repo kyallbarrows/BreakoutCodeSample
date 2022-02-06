@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.3882353, g: 0.12941177, b: 0, a: 1}
+  m_AmbientSkyColor: {r: 0.51227957, g: 0.17075986, b: 0, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -271,6 +271,16 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7584839764079753364, guid: 82cedea2761d8492bab2719c435f9420,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 1ad6ba4d1bca4443daefe1a0af9c976b, type: 2}
+    - target: {fileID: -4683669308469848369, guid: 82cedea2761d8492bab2719c435f9420,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: d11f35dfc4e2241aea9386eccb922841, type: 2}
     - target: {fileID: -2911713576777437857, guid: 82cedea2761d8492bab2719c435f9420,
         type: 3}
       propertyPath: m_Materials.Array.data[0]
@@ -499,12 +509,12 @@ Light:
   m_GameObject: {fileID: 1636529277}
   m_Enabled: 1
   serializedVersion: 10
-  m_Type: 2
+  m_Type: 0
   m_Shape: 0
   m_Color: {r: 1, g: 0.44920295, b: 0, a: 1}
-  m_Intensity: 20
+  m_Intensity: 35
   m_Range: 10
-  m_SpotAngle: 30
+  m_SpotAngle: 170.8
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
@@ -558,13 +568,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1636529277}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.88, y: 1.37, z: 0.97}
+  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: -5.42, y: -0.12, z: 0.7}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 270, y: 0, z: 0}
 --- !u!1 &1813790152 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 82cedea2761d8492bab2719c435f9420,
