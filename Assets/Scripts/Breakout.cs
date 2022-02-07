@@ -12,13 +12,11 @@ public class Breakout : MonoBehaviour
     private IController _currentGameController;
     private AIController _aiController;
     private TouchController _touchController;
-    private bool _useAIController = false;
+    private bool _useAIController = true;
 
     private int _score = 0;
     private int _lives = Consts.INITIAL_LIVES;
     private int _gameLevel = 1;
-
-    public bool AIControlEnabled = true;
 
     // Start is called before the first frame update
     void Start()

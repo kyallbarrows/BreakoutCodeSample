@@ -1,5 +1,5 @@
 ## Running the app
-Open with Unity 2019.4.29, and use mouse for control, or watch a playthru video here: https://youtu.be/mCcF9loifqo
+Open with Unity 2019.4.29, and use mouse for control, or watch a playthru video here: https://youtu.be/trckMUx9-fI
 
 ## QA Status and known issues
 - I haven't done a full QA pass due to time constraints.  Scoring and losing lives works, but I haven't tested losing all lives, or clearing all the bricks.
