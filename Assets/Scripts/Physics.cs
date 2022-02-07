@@ -171,8 +171,10 @@ public class Physics
 				// check this row
 				int colIndex = ballPos.x / Consts.BRICK_WIDTH;
 
-				// if we have a brick, reflect 
-				if (thisRow[colIndex] && CheckBrickHit(ballPos, colIndex)) {
+				// if we have a brick, reflect
+				// TODO: This method is called "CHECK brick hit" but modifies velocity,
+				// should really clean that up
+				if (thisRow[colIndex] && CheckBrickHit(thisRow, ballPos, colIndex)) {
 					hitBrick = true;
 					SoundManager.PlaySound(string.Format(Consts.SOUND_RESOURCE_BRICK_TEMPLATE, row));
 					thisRow[colIndex] = false;
@@ -247,7 +249,7 @@ public class Physics
 		return result;
 	}
 
-	private bool CheckBrickHit(Vector2 ballPos, int column) {
+	private bool CheckBrickHit(BitArray rowBricks, Vector2 ballPos, int column) {
 		// this is a little inaccurate, as we'll count a hit from below on the end
 		// as a side hit.  This causes some really weird behavior sometimes.
 		// If I had more time, I'd probably strip this out and just use some flavor
@@ -259,12 +261,16 @@ public class Physics
 		int leftEdge = column * Consts.BRICK_WIDTH;
 		int rightEdge = leftEdge + Consts.BRICK_WIDTH - 1;
 
+		// short circuit evaluation should protect us from checking rowBricks[-1];
+		bool hasLeftNeighbor = column == 0 || rowBricks[column - 1];
+		bool hasRightNeighbor = column == Consts.BRICKS_PER_ROW - 1 || rowBricks[column + 1];
+
 		if (ballPos.x >= leftEdge && ballPos.x <= rightEdge)
 		{
 			// if it was hit on the left, from the left, or on the
 			// right, from the right, rebound x
-			if ((ballPos.x == leftEdge && _ballVelocity.x > 0) ||
-				(ballPos.x == rightEdge && _ballVelocity.x < 0))
+			if ((ballPos.x == leftEdge && _ballVelocity.x > 0 && !hasLeftNeighbor) ||
+				(ballPos.x == rightEdge && _ballVelocity.x < 0 && !hasRightNeighbor))
 			{
 				_ballVelocity.x *= -1;
 			}
