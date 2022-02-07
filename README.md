@@ -1,9 +1,8 @@
 ## Running the app
 Open with Unity 2019.4.29, and use mouse for control, or watch a playthru video here: https://youtu.be/trckMUx9-fI
 
-## QA Status and known issues
+## QA Status
 - I haven't done a full QA pass due to time constraints.  Scoring and losing lives works, but I haven't tested losing all lives, or clearing all the bricks.
-- The hit detection, and thus the physics, has a pretty serious problem: a hit on the corner pixel of a brick can send the ball in the wrong direction.  This can cause it to bounce between bricks and take out a whole swath at once.  It's fixable, but I'm out of time.
 
 ## Concessions to expediency (aka "I'd do it if I had more time")
 - I'm skipping over the initial state of the game. It's not quite accurate to how it worked on the Atari 2600, but it's also hard to figure out how the start screen worked without playing on device.  Instead, I'm just launching the ball immediately.
@@ -22,4 +21,4 @@ The spec mentioned "Visualization: Graphics with Unity3D preferred".  The author
 In the DrawBuffer class, simple SetPixel calls would've sufficed, but I went a bit overboard because this is a code sample, and in samples it's ok to over-optimize when you don't really need it, just to show how you might approach a larger-scale issue of similar structure.  In this instance, there would only be about 2000 SetPixel calls, which nearly any modern device would handle just fine at 30fps or more, so all the memory copying is totally unneeded.  But it sure is fun!
 
 ## Changes from original
-The original hit detection was a bit weird.  I've watched YouTube playthrus extensively, but haven't quite figured out what they were doing.  I know that high ball speeds could cause it to warp through bricks, but the specifics of which way the ball bounces when this happens are still eluding me.  Since we have better processors available now, I'm "improving" it by doing pixel-by-pixel physics and hit detection with the ball.  However, it has the issues mentioned above.
+The original hit detection was a bit weird.  I've watched YouTube playthrus extensively, but haven't quite figured out what they were doing.  I know that high ball speeds could cause it to warp through bricks, but the specifics of which way the ball bounces when this happens are still eluding me.  Since we have better processors available now, I'm "improving" it by doing pixel-by-pixel physics and hit detection with the ball.
