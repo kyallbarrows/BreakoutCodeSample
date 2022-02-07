@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Manages playing sounds
+/// </summary>
 public class SoundManager
 {
     private static bool _initialized = false;
@@ -20,6 +23,7 @@ public class SoundManager
 
         CacheClip(Consts.SOUND_RESOURCE_WALL);
         CacheClip(Consts.SOUND_RESOURCE_PADDLE);
+        CacheClip(Consts.SOUND_RESOURCE_STORY);
         for (int i = 0; i < Consts.NUM_BRICK_ROWS; i++) {
             CacheClip(string.Format(Consts.SOUND_RESOURCE_BRICK_TEMPLATE, i));
         }

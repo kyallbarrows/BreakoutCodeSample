@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
-
-public delegate void PlayerScored(int scoreAmount);
-public delegate void PlayerWon();
-public delegate void PlayerLost();
 
 public class PhysicsStepResult {
 	public int ScoreChange = 0;
@@ -12,16 +7,15 @@ public class PhysicsStepResult {
 	public bool WonLevel = false;
 }
 
+/// <summary>
+/// Manages hit detection and moving the ball around.
+/// </summary>
 public class Physics
 {
-	public event PlayerScored OnPlayerScored;
-	public event PlayerWon OnPlayerWon;
-	public event PlayerLost OnPlayerLifeLost;
-
-	// Track whether the bricks are alive or not using a BitVector32 for each
+	// Track whether the bricks are alive or not using a BitArray for each
 	// row of bricks.  
 	private BitArray[] _bricks = new BitArray[Consts.NUM_BRICK_ROWS];
-	private int _remainingBricks;
+	private int _numRemainingBricks;
 
 	private bool _ballAlive = true;
 	private float _ballAngle;
@@ -38,27 +32,23 @@ public class Physics
 	private int _paddleLeftX;
 	public int PaddleLeftX => _paddleLeftX;
 
-	public Physics() {
-	}
-
-	// TODO:
-	// have a run-frame function
-	// track ball pos, velocity
-	// track bricks, make accessible
-	// make ball and paddle accessible
-	// have way to set paddle pos
-	// have a way to set ball speed, maybe in constructor?
-	// raise events on wall/paddle bumps or brick hits?
-
+	/// <summary>
+	/// Moves the paddle to the provided location, in the range 0 to 1 (inclusive)
+	/// </summary>
+	/// <param name="leftRatio">How far from the left to move the paddle, in the range 0 to 1</param>
 	public void MovePaddleTo(float leftRatio) {
 		_paddleLeftX = (int)(leftRatio * (float)Consts.PADDLE_MOVE_RANGE);
 	}
 
+	/// <summary>
+	/// Resets the physics so the next level can begin.
+	/// </summary>
+	/// <param name="ballSpeed">The new movement speed of the ball for this level.</param>
 	public void Reset(float ballSpeed) {
-		_remainingBricks = Consts.NUM_BRICK_ROWS * Consts.BRICKS_PER_ROW;
+		_numRemainingBricks = Consts.NUM_BRICK_ROWS * Consts.BRICKS_PER_ROW;
 
 		for (int row = 0; row < Consts.NUM_BRICK_ROWS; row++) {
-			// create new BitVector for each row of bricks, setting all bits to true
+			// create new BitArray for each row of bricks, setting all bits to true
 			_bricks[row] = new BitArray(Consts.BRICKS_PER_ROW, true);
 		}
 
@@ -69,6 +59,10 @@ public class Physics
 		ResetBall();
 	}
 
+	/// <summary>
+	/// Reset just the ball to the starting position.  Useful if the player just
+	/// died and needs to start on the next life.
+	/// </summary>
 	public void ResetBall() {
 		_preciseBallPosition = new Vector2(Consts.INITIAL_BALL_X, Consts.INITIAL_BALL_Y);
 		_lastPixelBallPosition = PixelBallPosition;
@@ -80,10 +74,10 @@ public class Physics
 	}
 
 	/// <summary>
-	/// 
+	/// Runs a single step of the physics.  This needs some improvement.
 	/// </summary>
 	/// <param name="deltaT">Elapsed seconds since last call, used for moving the ball and paddle</param>
-	/// <returns>Whether the ball is still alive</returns>
+	/// <returns>A PhysicsStepResult instance containing any score change, whether they died, and whether they won</returns>
 	public PhysicsStepResult RunStep(float deltaT) {
 		// DONT run if the ball is dead, it just racks up losses unfairly.
 		if (!_ballAlive) {
@@ -95,11 +89,6 @@ public class Physics
 		// seems to happen fairly often in the original.
 		// If we only travel one angled-pixel at a time, we will ensure that we hit
 		// every x/y pixel in between current and destination positions.
-		// NOTE: we could optimize out the expensive square root call on .magnitude
-		// here by modifying the end condition on the for loop.  It's only once
-		// per frame, so no need, but if it was 10,000 calls, we'd probably fix it.
-		// Furthermore, _ballVelocity only changes on paddle hits.  It reads better like this,
-		// but should probably be moved to the paddle hit code, and the value stored.
 		float ballDistance = deltaT * _ballVelocity.magnitude;
 
 		// There are 3 scenarios here:
@@ -183,18 +172,17 @@ public class Physics
 				int colIndex = ballPos.x / Consts.BRICK_WIDTH;
 
 				// if we have a brick, reflect 
-				if (thisRow[colIndex] && CheckBrickHit(ballPos, row, colIndex)) {
+				if (thisRow[colIndex] && CheckBrickHit(ballPos, colIndex)) {
 					hitBrick = true;
 					SoundManager.PlaySound(string.Format(Consts.SOUND_RESOURCE_BRICK_TEMPLATE, row));
 					thisRow[colIndex] = false;
-					_remainingBricks--;
+					_numRemainingBricks--;
 
-					if (_remainingBricks == 0)
+					if (_numRemainingBricks == 0)
 					{
 						result.WonLevel = true;
 					}
 
-					// fire off a PlayerScored event
 					result.ScoreChange += Consts.BRICK_VALUES[row];
 				}
 			}
@@ -259,7 +247,7 @@ public class Physics
 		return result;
 	}
 
-	private bool CheckBrickHit(Vector2 ballPos, int row, int column) {
+	private bool CheckBrickHit(Vector2 ballPos, int column) {
 		// this is a little inaccurate, as we'll count a hit from below on the end
 		// as a side hit.  This causes some really weird behavior sometimes.
 		// If I had more time, I'd probably strip this out and just use some flavor

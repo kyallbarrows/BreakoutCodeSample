@@ -17,37 +17,44 @@ public class DrawBuffer
     // would need proper benchmarking and testing on at least iOS, Android,
     // and WebGL.  Since the parts of the code that actually do the drawing are
     // pretty well contained, we could even do device specific drawing code
-	// here if we really needed to using #UNITY_IOS etc.
+	// here if we really needed to using device specific code.
 
     // Doing the array method also incurs an overhead, and in face might even be
     // slower at this scale.  However, it would probably scale better than for
     // loops and setpixel calls.
 
+    // TLDR: I'm going way overboard here because this is a code sample.
+
     private Texture2D _destinationTexture;
     private Color32[] _destinationTextureReset;
-    // on every draw cycle, we'll copy _destinationTextureReset into this buffer,
+
+    // on every draw cycle, we'll clear this with _destinationTextureReset,
     // then draw all the elements, then copy it into _destinationTexture
     private Color32[] _drawBuffer;
 
+    // Color32 arrays for all the sprites we'll be using
     private Dictionary<string, Color32[]> _spritePixels = new Dictionary<string, Color32[]>();
 
-    // how far down and left we need to start drawing
     private int _destinationWidth;
     private int _destinationHeight;
+
+    // how far down and left we need to start drawing, since the area the game
+    // runs in is smaller than the screen
     private int _topMargin;
     private int _leftMargin;
 
     /// <summary>
 	/// Constructor.
 	/// </summary>
+	/// <param name="destinationTexture">The texture to draw to.  Needs to be made readable/writable in import settings.</param>
     public DrawBuffer(Texture2D destinationTexture) {
         _destinationTexture = destinationTexture;
         _destinationWidth = destinationTexture.width;
         _destinationHeight = destinationTexture.height;
+        _drawBuffer = new Color32[_destinationWidth * _destinationHeight];
+
         _leftMargin = (_destinationWidth - Consts.GAME_WIDTH) / 2;
         _topMargin = (_destinationHeight - Consts.GAME_HEIGHT) / 2;
-
-        _drawBuffer = new Color32[_destinationWidth * _destinationHeight];
 
         // Load up all the textures from Resources folder.
         // While it would be really great to use a sprite atlas here (and it's doable)
@@ -86,11 +93,11 @@ public class DrawBuffer
 
         try
         {
-            // MUSTFIX: Replace the texture with a new one!
             // fill the reset texture with black
             // NOTE: the texture needs to be made writeable in the import settings.
             // While it's a teeny bit wasteful to have the color bars texture that we'll
-            // just be throwing away, it's probably how we'd get it from the art team.
+            // just be throwing away, it's probably how we'd get it from the art team,
+            // and it makes it easier to tweak the scene in editor.
             for (int x = 0; x < _destinationTexture.width; x++)
             {
                 for (int y = 0; y < _destinationTexture.height; y++)
@@ -102,7 +109,7 @@ public class DrawBuffer
             // initialize reset texture with all black pixels. 
             _destinationTextureReset = _destinationTexture.GetPixels32();
             Blit(_spritePixels[Consts.SPRITE_HOUSE], Consts.HOUSE_WIDTH, Consts.HOUSE_HEIGHT,
-                _destinationTextureReset, _leftMargin, _topMargin, _destinationWidth, _destinationHeight);
+                _destinationTextureReset, _leftMargin, _topMargin, _destinationWidth);
         }
         catch (Exception e)
         {
@@ -123,21 +130,20 @@ public class DrawBuffer
 	/// </summary>
     public void BeginDrawCycle() {
         Blit(_destinationTextureReset, _destinationWidth, _destinationHeight,
-            _drawBuffer, 0, 0, _destinationWidth, _destinationHeight);
+            _drawBuffer, 0, 0, _destinationWidth);
     }
 
     /// <summary>
 	/// Copies parts of one texture into another texture.
 	/// </summary>
-	/// <param name="src"></param>
-	/// <param name="sourceWidth"></param>
-	/// <param name="sourceHeight"></param>
-	/// <param name="dest"></param>
-	/// <param name="x"></param>
-	/// <param name="y"></param>
-	/// <param name="destWidth"></param>
-	/// <param name="destHeight"></param>
-    private void Blit(Color32[] src, int srcWidth, int srcHeight, Color32[] dest, int x, int y, int destWidth, int destHeight) {
+	/// <param name="src">The Color32 array to copy from</param>
+	/// <param name="sourceWidth">Width of the source sprite</param>
+	/// <param name="sourceHeight">Height of the source sprite</param>
+	/// <param name="dest">The Color32 array to write to</param>
+	/// <param name="x">The x position to write to</param>
+	/// <param name="y">The x position to write to</param>
+	/// <param name="destWidth">The width of the destination texture</param>
+	private void Blit(Color32[] src, int srcWidth, int srcHeight, Color32[] dest, int x, int y, int destWidth) {
         // since the 2-dimensional texture is now a 1-dimensional array, we can't just block copy.
         // we'll need to copy one row at a time, which should still be faster than nested for-loops and SetPixel() calls.
         for (int i = 0; i < srcHeight; i++) {
@@ -148,16 +154,15 @@ public class DrawBuffer
     /// <summary>
 	/// Convenience method for Blit'ing into _drawBuffer.
 	/// </summary>
-	/// <param name="src"></param>
-	/// <param name="srcWidth"></param>
-	/// <param name="srcHeight"></param>
-	/// <param name="x"></param>
-	/// <param name="y"></param>
-    private void DrawElement(Color32[] src, int srcWidth, int srcHeight, int x, int y)
+	/// <param name="src">The Color32 array to copy from</param>
+	/// <param name="sourceWidth">Width of the source sprite</param>
+	/// <param name="sourceHeight">Height of the source sprite</param>
+	/// <param name="x">The x position to write to</param>
+	/// <param name="y">The x position to write to</param>
+    private void DrawElement(Color32[] src, int sourceWidth, int sourceHeight, int x, int y)
     {
-        Blit(src, srcWidth, srcHeight, _drawBuffer, _leftMargin + x, _topMargin + y, _destinationWidth, _destinationHeight);
+        Blit(src, sourceWidth, sourceHeight, _drawBuffer, _leftMargin + x, _topMargin + y, _destinationWidth);
     }
-
 
     /// <summary>
 	/// Draws a number digit at top of screen
@@ -211,6 +216,9 @@ public class DrawBuffer
         DrawElement(_spritePixels[Consts.SPRITE_BALL], Consts.BALL_WIDTH, Consts.BALL_HEIGHT, x + Consts.HOUSE_WALL_THICKNESS, y);
     }
 
+    /// <summary>
+	/// Takes all the things you've drawn and puts them into the destination texture.
+	/// </summary>
     public void FinishDrawCycle() {
         _destinationTexture.SetPixels32(_drawBuffer);
         _destinationTexture.Apply(false);

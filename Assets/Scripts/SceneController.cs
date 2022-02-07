@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Controls the lava lamp and lighting for the scene
+/// </summary>
 public class SceneController : MonoBehaviour
 {
     private Light _lavaLight;
@@ -39,7 +42,11 @@ public class SceneController : MonoBehaviour
         var t = Time.timeSinceLevelLoad;
         // randomly wave lava light's intensity between half and full intensity
         _lavaLight.intensity = (RandomWaves(t, .3f) * .8f + .2f) * _lavaLightMaxIntensity;
-        _roomLight.enabled = Time.timeSinceLevelLoad % 40 > 35;
+
+        // dad talks to Bryan at 1:39 and tells him to keep a light on while he plays
+        if (!_roomLight.enabled && Time.timeSinceLevelLoad > 1 * 60 + 39) {
+            _roomLight.enabled = true;
+        }
 
         var lavaBlob1Stretch = 1f + RandomWaves(t, .1f);
         var lavaBlob2Stretch = .5f + RandomWaves(t, .15f);

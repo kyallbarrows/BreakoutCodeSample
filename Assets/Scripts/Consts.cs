@@ -20,14 +20,6 @@ public class Consts
 	public const int LEVEL_X = 78;
 	public const int STATS_Y = GAME_HEIGHT - 5;
 
-	public static readonly byte[] GRAY = { 0x99, 0x99, 0x99 };
-	public static readonly byte[] BLUE = { 0x00, 0x00, 0xFF };
-	public static readonly byte[] GREEN = { 0x00, 0xFF, 0x00 };
-	public static readonly byte[] YELLOW = { 0x99, 0x99, 0x00 };
-	public static readonly byte[] ORANGE = { 0x99, 0x99, 0x00 };
-	public static readonly byte[] DEEP_ORANGE = { 0x99, 0x99, 0x00 };
-	public static readonly byte[] RED = { 0xFF, 0x00, 0x00 };
-
 	public const int HOUSE_WIDTH = 100;
 	public const int HOUSE_HEIGHT = 56;
 	public const int HOUSE_WALL_THICKNESS = 5; // how far from the side of the scene we need to draw the ball, bricks, paddle
@@ -75,4 +67,5 @@ public class Consts
 	public const string SOUND_RESOURCE_PADDLE = "Sounds/paddle";
 	public const string SOUND_RESOURCE_WALL = "Sounds/wall";
 	public const string SOUND_RESOURCE_BRICK_TEMPLATE = "Sounds/brick{0}";
+	public const string SOUND_RESOURCE_STORY= "Sounds/story";
 }
